@@ -1,8 +1,11 @@
 package com.application.instagramm.user;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public class UserPrincipal implements UserDetails {
@@ -14,7 +17,9 @@ public class UserPrincipal implements UserDetails {
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return null;
+		List<GrantedAuthority> role = new ArrayList<>();
+		role.add(new SimpleGrantedAuthority(this.appUser.getRole().toString()));
+		return role;
 	}
 
 	@Override

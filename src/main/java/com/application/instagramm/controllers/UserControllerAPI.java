@@ -84,5 +84,10 @@ public class UserControllerAPI {
 
 		return ResponseEntity.status(200).body(connectionService.connections(user, Status.PENDING, true));
 	}
+	
+	@GetMapping("/roleTest")
+	public ResponseEntity roleTest() {
+		return ResponseEntity.status(200).body("OK");
+	}
 
 }

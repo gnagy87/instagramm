@@ -9,6 +9,8 @@ import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -44,6 +46,8 @@ public class AppUser {
 	private String firstName;
 	@Column(nullable = false)
 	private String lastName;
+	@Enumerated(EnumType.STRING)
+	private Role role;
 	private boolean isEnabled;
 	@Column(name = "created_at")
 	private Timestamp createdAt;
@@ -65,6 +69,7 @@ public class AppUser {
 		this.email = email;
 		this.firstName = firstName;
 		this.lastName = lastName;
+		this.role = Role.USER;
 		this.isEnabled = false;
 		this.createdAt = new Timestamp(System.currentTimeMillis());
 		this.posts = new ArrayList<>();
