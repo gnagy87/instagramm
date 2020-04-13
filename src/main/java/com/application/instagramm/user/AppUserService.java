@@ -2,6 +2,7 @@ package com.application.instagramm.user;
 
 import java.util.List;
 
+import com.application.instagramm.dto.AuthenticationResponseDTO;
 import com.application.instagramm.dto.ConnectionDTO;
 import com.application.instagramm.dto.LoginDTO;
 import com.application.instagramm.dto.RegisterDTO;
@@ -33,5 +34,9 @@ public interface AppUserService {
 	boolean isExisted(String username);
 
 	AppUser saveAppUser(RegisterDTO registerDTO);
+	
+	AuthenticationResponseDTO authentication(String username);
+	
+	Long getUserIdFromToken(String token);
 
 }

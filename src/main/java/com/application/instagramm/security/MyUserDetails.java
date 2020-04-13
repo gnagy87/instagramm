@@ -1,55 +1,62 @@
-package com.application.instagramm.user;
+package com.application.instagramm.security;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-public class UserPrincipal implements UserDetails {
-	private AppUser appUser;
+import com.application.instagramm.user.AppUser;
 
-	public UserPrincipal(AppUser appUser) {
-		this.appUser = appUser;
+public class MyUserDetails implements UserDetails {
+	private AppUser user;
+	
+	@Autowired
+	public MyUserDetails(AppUser user) {
+		this.user = user;
 	}
-
+	
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		List<GrantedAuthority> role = new ArrayList<>();
-		role.add(new SimpleGrantedAuthority(this.appUser.getRole().toString()));
-		return role;
+		List<GrantedAuthority> authorities = new ArrayList<>();
+		authorities.add(new SimpleGrantedAuthority(this.user.getRole().toString()));
+		return authorities;
+	}
+	
+	public Long getId() {
+		return this.user.getId();
 	}
 
 	@Override
 	public String getPassword() {
-		return this.appUser.getPassword();
+		return this.user.getPassword();
 	}
 
 	@Override
 	public String getUsername() {
-		return this.appUser.getUsername();
+		return this.user.getUsername();
 	}
 
 	@Override
 	public boolean isAccountNonExpired() {
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean isAccountNonLocked() {
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean isCredentialsNonExpired() {
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return this.appUser.isEnabled();
+		return this.user.isEnabled();
 	}
-
 }

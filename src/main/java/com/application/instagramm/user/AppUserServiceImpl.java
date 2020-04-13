@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.application.instagramm.connection.Connection;
 import com.application.instagramm.dto.AppUserDTO;
+import com.application.instagramm.dto.AuthenticationResponseDTO;
 import com.application.instagramm.dto.ConnectionDTO;
 import com.application.instagramm.dto.LoginDTO;
 import com.application.instagramm.dto.RegisterDTO;
@@ -16,6 +17,9 @@ import com.application.instagramm.exceptions.LoginException;
 import com.application.instagramm.exceptions.RegistrationException;
 import com.application.instagramm.exceptions.UserException;
 import com.application.instagramm.exceptions.ValidationException;
+import com.application.instagramm.security.JwtUtil;
+import com.application.instagramm.security.MyUserDetails;
+import com.application.instagramm.security.MyUserDetailsService;
 import com.application.instagramm.utils.ValidationService;
 
 @Service
@@ -24,13 +28,17 @@ public class AppUserServiceImpl implements AppUserService {
 	private AppUserRepository appUserRepository;
 	private ValidationService validationService;
 	private PasswordEncoder passwordEncoder;
+	private MyUserDetailsService userDetailsService;
+	private JwtUtil jwtTokenUtil;
 
 	@Autowired
 	public AppUserServiceImpl(AppUserRepository appUserRepository, ValidationService validationService,
-			PasswordEncoder passwordEncoder) {
+			PasswordEncoder passwordEncoder, MyUserDetailsService userDetailsService, JwtUtil jwtTokenUtil) {
 		this.appUserRepository = appUserRepository;
 		this.validationService = validationService;
 		this.passwordEncoder = passwordEncoder;
+		this.userDetailsService = userDetailsService;
+		this.jwtTokenUtil = jwtTokenUtil;
 	}
 
 	@Override
@@ -125,4 +133,15 @@ public class AppUserServiceImpl implements AppUserService {
 		return user;
 	}
 
+	@Override
+	public AuthenticationResponseDTO authentication(String username) {
+		final MyUserDetails userDetails = (MyUserDetails) userDetailsService.loadUserByUsername(username);
+		final String jwt = jwtTokenUtil.generateToken(userDetails);
+		return new AuthenticationResponseDTO(jwt);
+	}
+
+	@Override
+	public Long getUserIdFromToken(String token) {
+		return Long.parseLong(jwtTokenUtil.extractUserId(token));
+	}
 }
