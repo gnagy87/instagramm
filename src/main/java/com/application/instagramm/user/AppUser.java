@@ -60,7 +60,7 @@ public class AppUser {
 
 	@OneToMany(cascade = CascadeType.ALL, mappedBy = "appUser", fetch = FetchType.LAZY)
 	private Set<Connection> connections;
-	@OneToMany(mappedBy = "friend")
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "invitedUser", fetch = FetchType.LAZY)
 	private Set<Connection> connectionOf;
 
 	public AppUser(String username, String password, String email, String firstName, String lastName) {
@@ -76,5 +76,13 @@ public class AppUser {
 		this.comments = new ArrayList<>();
 		this.connections = new HashSet<>();
 		this.connectionOf = new HashSet<>();
+	}
+	
+	public void addConnection(Connection connection) {
+		this.getConnections().add(connection);
+	}
+	
+	public void addConnectionOf(Connection connection) {
+		this.getConnectionOf().add(connection);
 	}
 }

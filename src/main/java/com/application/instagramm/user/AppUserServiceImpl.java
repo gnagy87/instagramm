@@ -1,16 +1,21 @@
 package com.application.instagramm.user;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.application.instagramm.connection.Connection;
+import com.application.instagramm.connection.Status;
 import com.application.instagramm.dto.AppUserDTO;
 import com.application.instagramm.dto.AuthenticationResponseDTO;
 import com.application.instagramm.dto.ConnectionDTO;
+import com.application.instagramm.dto.ConnectionFilterDTO;
 import com.application.instagramm.dto.LoginDTO;
 import com.application.instagramm.dto.RegisterDTO;
 import com.application.instagramm.exceptions.LoginException;
@@ -46,6 +51,13 @@ public class AppUserServiceImpl implements AppUserService {
 		return appUserRepository.findAppUserByUsername(username)
 				.orElseThrow(() -> new UserException("User does not exist!"));
 	}
+	
+	@Override
+	public AppUser findById(Long userId) throws UserException {
+		return appUserRepository.findById(userId)
+				.orElseThrow(() -> new UserException("User does not exist!"));
+	}
+	
 
 	@Override
 	public void login(LoginDTO loginDTO) throws LoginException, UserException {
@@ -56,19 +68,54 @@ public class AppUserServiceImpl implements AppUserService {
 	}
 
 	@Override
-	public List<ConnectionDTO> connectionList(AppUser appUser) {
-		List<ConnectionDTO> result = new ArrayList<>();
-		for (Connection connection : appUser.getConnections()) {
-			AppUserDTO userDTO = new AppUserDTO();
-			userDTO.setId(connection.getFriend().getId());
-			userDTO.setFirstname(connection.getFriend().getFirstName());
-			userDTO.setLastname(connection.getFriend().getLastName());
-			userDTO.setEmail(connection.getFriend().getEmail());
-			ConnectionDTO connectionDTO = new ConnectionDTO(userDTO, connection.getStatus(),
-					connection.getResponseDate());
-			result.add(connectionDTO);
+	public List<ConnectionDTO> connectionList(ConnectionFilterDTO connectionRequestDTO) throws UserException {
+		AppUser user = findByUsername(connectionRequestDTO.getUsername());
+		List<ConnectionDTO> connectionsList = new ArrayList<>();
+		user.getConnections().forEach((connection) -> {
+			if (connectionRequestDTO.getStatus().equals("accepted") && connection.getStatus().toString().equals("ACCEPTED")) {
+				connectionsList.add(connectionDTOProvider(
+						friendProviderFromConnection(user.getId(), connection), connection.getStatus(), connection.getRequestSent()));
+			} else {
+				ConnectionDTO connectionDTO = new ConnectionDTO();
+				if (connectionRequestDTO.isInvitedUser()) {
+					connectionDTO = connectionDTOProvider(InvitedUserProviderFromConnection(user.getId(), connectionRequestDTO.getStatus(), connection), 
+							connection.getStatus(), connection.getRequestSent());
+				} else {
+					connectionDTO = connectionDTOProvider(AppUserProviderFromConnection(user.getId(), connectionRequestDTO.getStatus(), connection), 
+							connection.getStatus(), connection.getRequestSent());
+				}
+				if (connectionDTO != null) {
+					connectionsList.add(connectionDTO);
+				}
+			}
+		});
+		return connectionsList;
+	}
+	
+	public AppUser friendProviderFromConnection(Long userId, Connection connection) {
+		if (userId == connection.getAppUser().getId()) {
+			return connection.getInvitedUser();
 		}
-		return result;
+		return connection.getAppUser();
+	}
+	
+	public ConnectionDTO connectionDTOProvider(AppUser user, Status status, Timestamp timestamp) {
+		return new ConnectionDTO(new AppUserDTO(user.getId(),user.getUsername(), user.getFirstName(),
+				user.getLastName(), user.getEmail()), status, timestamp);
+	}
+	
+	public AppUser InvitedUserProviderFromConnection(Long userId, String string, Connection connection) {
+		if (userId == connection.getInvitedUser().getId() && connection.getStatus().toString().toLowerCase().equals(string)) {
+			return connection.getAppUser();
+		}
+		return null;
+	}
+	
+	public AppUser AppUserProviderFromConnection(Long userId, String string, Connection connection) {
+		if (userId == connection.getAppUser().getId() && connection.getStatus().toString().toLowerCase().equals(string)) {
+			return connection.getInvitedUser();
+		}
+		return null;	
 	}
 
 	@Override
@@ -77,7 +124,10 @@ public class AppUserServiceImpl implements AppUserService {
 		if (isExisted(registerDTO.getUsername())) {
 			throw new RegistrationException("Username already taken!");
 		}
-		return saveAppUser(registerDTO);
+		AppUser newUser = new AppUser(registerDTO.getUsername(), passwordEncoder.encode(registerDTO.getPassword()),
+				registerDTO.getEmail(), registerDTO.getFirstName(), registerDTO.getLastName());
+		appUserRepository.save(newUser);
+		return newUser;
 	}
 
 	@Override
@@ -126,11 +176,12 @@ public class AppUserServiceImpl implements AppUserService {
 	}
 
 	@Override
-	public AppUser saveAppUser(RegisterDTO registerDTO) {
-		AppUser user = new AppUser(registerDTO.getUsername(), passwordEncoder.encode(registerDTO.getPassword()),
-				registerDTO.getEmail(), registerDTO.getFirstName(), registerDTO.getLastName());
-		appUserRepository.save(user);
-		return user;
+	public void updateAppUser(AppUser appUser) throws UserException {
+		if (isExisted(appUser.getUsername())) {
+			appUserRepository.save(appUser);
+		} else {
+			throw new UserException("User has not been registered!");
+		}
 	}
 
 	@Override
@@ -144,4 +195,10 @@ public class AppUserServiceImpl implements AppUserService {
 	public Long getUserIdFromToken(String token) {
 		return Long.parseLong(jwtTokenUtil.extractUserId(token));
 	}
+
+	@Override
+	public String getToken(HttpServletRequest request) {
+		return request.getHeader("Authorization").substring(7);
+	}
+	
 }

@@ -12,6 +12,7 @@ import javax.persistence.Table;
 
 import com.application.instagramm.user.AppUser;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,6 +20,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "connections")
 public class Connection {
@@ -30,8 +32,8 @@ public class Connection {
 	@MapsId("appUserId")
 	private AppUser appUser;
 	@ManyToOne
-	@MapsId("friendId")
-	private AppUser friend;
+	@MapsId("invitedUserId")
+	private AppUser invitedUser;
 	private Timestamp requestSent;
 	@Enumerated(EnumType.STRING)
 	private Status status;

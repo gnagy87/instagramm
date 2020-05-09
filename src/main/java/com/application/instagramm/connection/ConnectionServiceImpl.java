@@ -1,67 +1,69 @@
 package com.application.instagramm.connection;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.application.instagramm.dto.AppUserDTO;
 import com.application.instagramm.dto.ConnectionDTO;
+import com.application.instagramm.dto.StatusMessageDTO;
+import com.application.instagramm.exceptions.ConnectionException;
+import com.application.instagramm.exceptions.UserException;
 import com.application.instagramm.user.AppUser;
+import com.application.instagramm.user.AppUserService;
 
 @Service
 public class ConnectionServiceImpl implements ConnectionService {
 	private ConnectionRepository connectionRepository;
+	private AppUserService appUserService;
 
 	@Autowired
-	public ConnectionServiceImpl(ConnectionRepository connectionRepository) {
+	public ConnectionServiceImpl(ConnectionRepository connectionRepository, AppUserService appUserService) {
 		this.connectionRepository = connectionRepository;
+		this.appUserService = appUserService;
 	}
-
-	@Override
-	public List<ConnectionDTO> connections(AppUser appUser, Status status, boolean friendOf) {
-		List<ConnectionDTO> connections = new ArrayList<>();
-		return connectionInitializer(connections, appUser, status, friendOf);
-
-	}
-
-	private List<ConnectionDTO> connectionInitializer(List<ConnectionDTO> connections, AppUser appUser, Status status,
-			boolean friendOf) {
-		List<ConnectionDTO> result = connections;
-		List<Connection> query = new ArrayList<>();
-		if (!friendOf) {
-			query = connectionRepository.findByAppUserAndStatus(appUser, status);
-		} else {
-			query = connectionRepository.findByFriendAndStatus(appUser, status);
-		}
-		for (Connection connection : query) {
-			AppUserDTO userDTO = new AppUserDTO();
-			if (!friendOf) {
-				userDTO.setId(connection.getFriend().getId());
-				userDTO.setFirstname(connection.getFriend().getFirstName());
-				userDTO.setLastname(connection.getFriend().getLastName());
-				userDTO.setEmail(connection.getFriend().getEmail());
-			} else {
-				userDTO.setId(connection.getAppUser().getId());
-				userDTO.setFirstname(connection.getAppUser().getFirstName());
-				userDTO.setLastname(connection.getAppUser().getLastName());
-				userDTO.setEmail(connection.getAppUser().getEmail());
-			}
-			ConnectionDTO connectionDTO = new ConnectionDTO(userDTO, connection.getStatus(),
-					connection.getResponseDate());
-			result.add(connectionDTO);
-		}
-		if (friendOf) {
-			return connectionInitializer(result, appUser, status, false);
-		} else {
-			return result;
-		}
-	}
-
+	
 	@Override
 	public void saveConnection(Connection connection) {
 		connectionRepository.save(connection);
+	}
 
+	@Override
+	public StatusMessageDTO friendRequestMaker(AppUser appUser, AppUser invitedUser) throws ConnectionException {
+		if (!connectionRepository.findByAppUserAndInvitedUserAndStatus(appUser, invitedUser, Status.ACCEPTED).isPresent() &&
+			!connectionRepository.findByAppUserAndInvitedUserAndStatus(appUser, invitedUser, Status.PENDING).isPresent() &&
+			!connectionRepository.findByAppUserAndInvitedUserAndStatus(invitedUser, appUser, Status.ACCEPTED).isPresent() &&
+			!connectionRepository.findByAppUserAndInvitedUserAndStatus(invitedUser, appUser, Status.PENDING).isPresent()) {
+			Connection connection = new Connection();
+			connection.setAppUser(appUser);
+			connection.setInvitedUser(invitedUser);
+			connection.setStatus(Status.PENDING);
+			connection.setRequestSent(new Timestamp(System.currentTimeMillis()));
+			saveConnection(connection);
+			
+			return new StatusMessageDTO("200","Request has been sent");
+		} else {
+			throw new ConnectionException("Request can not be sent!");
+		}
+	}
+
+	@Override
+	public StatusMessageDTO acceptFriendRequest(AppUser appUser, AppUser invitedUser) throws ConnectionException {
+		Optional<Connection> pendingConnection = connectionRepository.findByAppUserAndInvitedUserAndStatus(appUser, invitedUser, Status.PENDING);
+		if (pendingConnection.isPresent()) {
+			Connection acceptedConnection = pendingConnection.get();
+			acceptedConnection.setStatus(Status.ACCEPTED);
+			acceptedConnection.setRequestSent(new Timestamp(System.currentTimeMillis()));
+			saveConnection(acceptedConnection);
+			
+			return new StatusMessageDTO("200", "Request was accepted");
+		} else {
+			throw new ConnectionException("Request was not accepted!");
+		}
 	}
 }
