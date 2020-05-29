@@ -4,10 +4,7 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.application.instagramm.connection.Connection;
 import com.application.instagramm.connection.ConnectionService;
@@ -20,17 +17,18 @@ import com.application.instagramm.user.AppUser;
 import com.application.instagramm.user.AppUserService;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping(UserControllerAPI.MAIN_URL)
 public class UserControllerAPI {
+
+	public static final String MAIN_URL = "/api/v1/user/";
 
 	private AppUserService appUserService;
 
-	@Autowired
 	public UserControllerAPI(AppUserService appUserService) {
 		this.appUserService = appUserService;
 	}
 
-	@PostMapping("/registration")
+	@PostMapping("registration")
 	public ResponseEntity resgistration(@RequestBody RegisterDTO registerDTO) {
 		try {
 			return ResponseEntity.status(200).body(new StatusMessageDTO("200",
@@ -40,7 +38,7 @@ public class UserControllerAPI {
 		}
 	}
 	
-	@PostMapping("/authenticate")
+	@PostMapping("authenticate")
 	public ResponseEntity authenticate(@RequestBody LoginDTO loginDTO) {
 		try {
 			appUserService.login(loginDTO);
@@ -49,4 +47,6 @@ public class UserControllerAPI {
 			return ResponseEntity.status(400).body(new ErrorMessageDTO("400", e.getMessage()));
 		}
 	}
+
+
 }

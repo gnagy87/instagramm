@@ -3,7 +3,7 @@ package com.application.instagramm.connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.application.instagramm.mappers.AppUserMapper;
 import org.springframework.stereotype.Service;
 
 import com.application.instagramm.dto.AppUserDTO;
@@ -13,14 +13,15 @@ import com.application.instagramm.user.AppUser;
 @Service
 public class ConnectionServiceImpl implements ConnectionService {
 	private ConnectionRepository connectionRepository;
+	private final AppUserMapper appUserMapper;
 
-	@Autowired
-	public ConnectionServiceImpl(ConnectionRepository connectionRepository) {
+	public ConnectionServiceImpl(ConnectionRepository connectionRepository, AppUserMapper appUserMapper) {
 		this.connectionRepository = connectionRepository;
+		this.appUserMapper = appUserMapper;
 	}
 
 	@Override
-	public List<ConnectionDTO> connections(AppUser appUser, Status status, boolean friendOf) {
+	public List<ConnectionDTO> getConnections(AppUser appUser, Status status, boolean friendOf) {
 		List<ConnectionDTO> connections = new ArrayList<>();
 		return connectionInitializer(connections, appUser, status, friendOf);
 
@@ -29,24 +30,18 @@ public class ConnectionServiceImpl implements ConnectionService {
 	private List<ConnectionDTO> connectionInitializer(List<ConnectionDTO> connections, AppUser appUser, Status status,
 			boolean friendOf) {
 		List<ConnectionDTO> result = connections;
-		List<Connection> query = new ArrayList<>();
+		List<Connection> query;
 		if (!friendOf) {
 			query = connectionRepository.findByAppUserAndStatus(appUser, status);
 		} else {
 			query = connectionRepository.findByFriendAndStatus(appUser, status);
 		}
 		for (Connection connection : query) {
-			AppUserDTO userDTO = new AppUserDTO();
+			AppUserDTO userDTO;
 			if (!friendOf) {
-				userDTO.setId(connection.getFriend().getId());
-				userDTO.setFirstname(connection.getFriend().getFirstName());
-				userDTO.setLastname(connection.getFriend().getLastName());
-				userDTO.setEmail(connection.getFriend().getEmail());
+				userDTO = appUserMapper.appUserToAppUserDTO(connection.getFriend());
 			} else {
-				userDTO.setId(connection.getAppUser().getId());
-				userDTO.setFirstname(connection.getAppUser().getFirstName());
-				userDTO.setLastname(connection.getAppUser().getLastName());
-				userDTO.setEmail(connection.getAppUser().getEmail());
+				userDTO = appUserMapper.appUserToAppUserDTO(connection.getAppUser());
 			}
 			ConnectionDTO connectionDTO = new ConnectionDTO(userDTO, connection.getStatus(),
 					connection.getResponseDate());

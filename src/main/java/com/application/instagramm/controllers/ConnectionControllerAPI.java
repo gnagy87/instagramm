@@ -1,11 +1,13 @@
 package com.application.instagramm.controllers;
 
+import java.util.List;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import com.application.instagramm.dto.ConnectionDTO;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.application.instagramm.connection.Connection;
@@ -15,19 +17,22 @@ import com.application.instagramm.user.AppUser;
 import com.application.instagramm.user.AppUserService;
 
 @RestController
-@RequestMapping("/api/connection")
+@RequestMapping(ConnectionControllerAPI.MAIN_URL)
 public class ConnectionControllerAPI {
+
+	public static final String MAIN_URL = "/api/v1/connection/";
+
 	private ConnectionService connectionService;
 	private AppUserService appUserService;
-	
-	@Autowired
+
 	public ConnectionControllerAPI(ConnectionService connectionService, AppUserService appUserService) {
 		this.connectionService = connectionService;
 		this.appUserService = appUserService;
 	}
 	
-	@PostMapping("/addfriend")
-	public ResponseEntity addFriend() {
+	@PostMapping("addfriend")
+	@ResponseStatus(HttpStatus.OK)
+	public List<ConnectionDTO> addFriend() {
 		AppUser user = new AppUser("username", "password", "email", "first", "last");
 		AppUser user2 = new AppUser("username2", "password2", "email2", "first2", "last2");
 		AppUser user3 = new AppUser("username3", "password3", "email3", "first3", "last3");
@@ -55,7 +60,7 @@ public class ConnectionControllerAPI {
 		connectionService.saveConnection(af2);
 		// return ResponseEntity.status(200).body(appUserService.connectionList(user));
 
-		return ResponseEntity.status(200).body(connectionService.connections(user, Status.PENDING, true));
+		return connectionService.getConnections(user, Status.PENDING, true);
 	}
 
 }

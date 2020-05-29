@@ -1,13 +1,12 @@
 package com.application.instagramm.user;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.application.instagramm.mappers.AppUserMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.application.instagramm.connection.Connection;
 import com.application.instagramm.dto.AppUserDTO;
 import com.application.instagramm.dto.AuthenticationResponseDTO;
 import com.application.instagramm.dto.ConnectionDTO;
@@ -25,15 +24,16 @@ import com.application.instagramm.utils.ValidationService;
 @Service
 public class AppUserServiceImpl implements AppUserService {
 
+	private final AppUserMapper appUserMapper;
 	private AppUserRepository appUserRepository;
 	private ValidationService validationService;
 	private PasswordEncoder passwordEncoder;
 	private MyUserDetailsService userDetailsService;
 	private JwtUtil jwtTokenUtil;
 
-	@Autowired
-	public AppUserServiceImpl(AppUserRepository appUserRepository, ValidationService validationService,
-			PasswordEncoder passwordEncoder, MyUserDetailsService userDetailsService, JwtUtil jwtTokenUtil) {
+	public AppUserServiceImpl(AppUserMapper appUserMapper, AppUserRepository appUserRepository, ValidationService validationService,
+							  PasswordEncoder passwordEncoder, MyUserDetailsService userDetailsService, JwtUtil jwtTokenUtil) {
+		this.appUserMapper = appUserMapper;
 		this.appUserRepository = appUserRepository;
 		this.validationService = validationService;
 		this.passwordEncoder = passwordEncoder;
@@ -56,19 +56,15 @@ public class AppUserServiceImpl implements AppUserService {
 	}
 
 	@Override
-	public List<ConnectionDTO> connectionList(AppUser appUser) {
-		List<ConnectionDTO> result = new ArrayList<>();
-		for (Connection connection : appUser.getConnections()) {
-			AppUserDTO userDTO = new AppUserDTO();
-			userDTO.setId(connection.getFriend().getId());
-			userDTO.setFirstname(connection.getFriend().getFirstName());
-			userDTO.setLastname(connection.getFriend().getLastName());
-			userDTO.setEmail(connection.getFriend().getEmail());
-			ConnectionDTO connectionDTO = new ConnectionDTO(userDTO, connection.getStatus(),
-					connection.getResponseDate());
-			result.add(connectionDTO);
-		}
-		return result;
+	public List<ConnectionDTO> getConnectionList(AppUser appUser) {
+		return appUser.getConnections().stream()
+				.map(c -> {
+					AppUserDTO friendDTO = appUserMapper.appUserToAppUserDTO(c.getFriend());
+					ConnectionDTO connectionDTO = new ConnectionDTO(friendDTO, c.getStatus(),
+							c.getResponseDate());
+					return connectionDTO;
+				})
+				.collect(Collectors.toList());
 	}
 
 	@Override

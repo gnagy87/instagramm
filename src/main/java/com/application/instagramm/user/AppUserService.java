@@ -17,7 +17,7 @@ public interface AppUserService {
 
 	void login(LoginDTO loginDTO) throws LoginException, UserException;
 
-	List<ConnectionDTO> connectionList(AppUser appUser);
+	List<ConnectionDTO> getConnectionList(AppUser appUser);
 
 	AppUser userRegistration(RegisterDTO registerDTO) throws RegistrationException, ValidationException;
 
